@@ -1,0 +1,63 @@
+{
+	"name": "express-cut",
+	"author": "mlarmet",
+	"publisher": "mlarmet",
+	"displayName": "NodeJS Express Shortcuts",
+	"description": "Auto generate CRUD api route",
+	"icon": "road.png",
+	"license": "MIT",
+	"version": "0.0.2",
+	"engines": {
+		"vscode": "^1.75.1"
+	},
+	"files": [
+		"src/backend"
+	],
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [],
+	"main": "./extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "route.createNewRoute",
+				"title": "Create new route"
+			},
+			{
+				"command": "backend.setupProject",
+				"title": "Create new nodejs backend project"
+			},
+			{
+				"command": "route.addTypeRoute",
+				"title": "Add new type route"
+			}
+		],
+		"snippets": [
+			{
+				"language": "javascript",
+				"path": "./snippets.json"
+			},
+			{
+				"language": "typescript",
+				"path": "./snippets.json"
+			}
+		]
+	},
+	"scripts": {
+		"lint": "eslint .",
+		"pretest": "npm run lint",
+		"test": "node ./test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/glob": "^8.1.0",
+		"@types/mocha": "^10.0.1",
+		"@types/node": "16.x",
+		"@types/vscode": "^1.75.1",
+		"@vscode/test-electron": "^2.2.3",
+		"eslint": "^8.34.0",
+		"glob": "^8.1.0",
+		"mocha": "^10.2.0",
+		"typescript": "^4.9.5"
+	}
+}
