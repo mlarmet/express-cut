@@ -1,27 +1,20 @@
 const vscode = require("vscode");
-const { readFileContent } = require("../utils");
+const { readFileContent } = require("../../../utils/files");
+const { checkContext, checkWorkspace } = require("../../../utils/workspace");
 
 //======================================
-const ROUTE_TEMPLATE_PATH = "/src/route";
+const ROUTE_TEMPLATE_PATH = "/src/template/route";
 
 //======================================
 
 const encoder = new TextEncoder();
 
 async function addRoute(context) {
-	if (!context) {
-		vscode.window.showErrorMessage("Le contexte est invalide");
+	if (!checkContext(context)) {
 		return;
 	}
 
-	// The code you place here will be executed every time your command is executed
-	const workspaceFolders = vscode.workspace.workspaceFolders;
-
-	//
-	// Check if a workspace is open
-	//
-	if (!workspaceFolders) {
-		vscode.window.showErrorMessage("Aucun dossier ouvert dans l'espace de travail");
+	if (!checkWorkspace()) {
 		return;
 	}
 

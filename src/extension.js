@@ -2,9 +2,11 @@
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
 
-const setupBackend = require("./commands/setupBackend");
-const createRoute = require("./commands/createRoute");
-const addTypeRoute = require("./commands/add");
+const setupBackend = require("./commands/expressjs/setupBackend");
+const createRoute = require("./commands/expressjs/createRoute");
+const addTypeRoute = require("./commands/expressjs/addRoute");
+
+const addComponent = require("./commands/react/addComponent");
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -18,14 +20,18 @@ function activate(context) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
-	let createCommand = vscode.commands.registerCommand("route.createNewRoute", () => createRoute(context));
-	context.subscriptions.push(createCommand);
 
-	let setupBackendCommand = vscode.commands.registerCommand("backend.setupProject", () => setupBackend(context));
-	context.subscriptions.push(setupBackendCommand);
+	const commands = [
+		{ commandName: "express.setupProject", functionName: setupBackend },
+		{ commandName: "route.createNewRoute", functionName: createRoute },
+		{ commandName: "route.addTypeRoute", functionName: addTypeRoute },
+		{ commandName: "react.addComponent", functionName: addComponent },
+	];
 
-	let addCommand = vscode.commands.registerCommand("route.addTypeRoute", () => addTypeRoute(context));
-	context.subscriptions.push(addCommand);
+	commands.forEach((command) => {
+		const commandRegistration = vscode.commands.registerCommand(command.commandName, () => command.functionName(context));
+		context.subscriptions.push(commandRegistration);
+	});
 }
 
 // This method is called when your extension is deactivated

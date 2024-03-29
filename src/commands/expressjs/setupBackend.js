@@ -1,8 +1,9 @@
 const vscode = require("vscode");
-const { folderExist, duplicateFolderRecursively, readFileContent } = require("../utils");
+const { folderExist, duplicateFolderRecursively, readFileContent } = require("../../../utils/files");
+const { checkContext, checkWorkspace } = require("../../../utils/workspace");
 
 //======================================
-const BACKEND_TEMPLATE_PATH = "/src/backend";
+const BACKEND_TEMPLATE_PATH = "/src/template/expressjs";
 
 const BACKEND_FOLDER_NAME = "backend";
 
@@ -12,26 +13,20 @@ const PACKAGE_FILE_NAME = "package.json";
 const encoder = new TextEncoder();
 
 async function setupBackend(context) {
-	if (!context) {
-		vscode.window.showErrorMessage("Le contexte est invalide");
+	if (!checkContext(context)) {
 		return;
 	}
 
-	// The code you place here will be executed every time your command is executed
+	if (!checkWorkspace()) {
+		return;
+	}
+
 	const workspaceFolders = vscode.workspace.workspaceFolders;
-
-	//
-	// Check if a workspace is open
-	//
-	if (!workspaceFolders) {
-		vscode.window.showErrorMessage("Aucun dossier ouvert dans l'espace de travail");
-		return;
-	}
 
 	//
 	// Check if the backend folder exists
 	//
-	if (await folderExist(BACKEND_FOLDER_NAME)) {
+	if ((await folderExist(BACKEND_FOLDER_NAME)) != null) {
 		vscode.window.showErrorMessage("Le dossier " + BACKEND_FOLDER_NAME + " existe deja a la racine");
 		return;
 	}
@@ -52,8 +47,8 @@ async function setupBackend(context) {
 	//
 	let PROJECT_DESCRIPTION = await vscode.window.showInputBox({ prompt: "Description du projet" });
 
-	const TARGET_PATH_URI = vscode.Uri.joinPath(workspaceFolders[0].uri, BACKEND_FOLDER_NAME);
 	const SOURCE_PATH = context.extensionPath + BACKEND_TEMPLATE_PATH;
+	const TARGET_PATH_URI = vscode.Uri.joinPath(workspaceFolders[0].uri, BACKEND_FOLDER_NAME);
 
 	const EXCLUDED_ELEMENTS = ["node_modules", ".git", ".vscode", "package-lock.json", "package.json"];
 
@@ -80,7 +75,7 @@ async function setupBackend(context) {
 	//
 	// END
 	//
-	vscode.window.showInformationMessage("Le projet " + PROJECT_NAME + " a ete copier avec succes");
+	vscode.window.showInformationMessage("Le projet " + PROJECT_NAME + " a été copié avec succès");
 }
 
 module.exports = setupBackend;

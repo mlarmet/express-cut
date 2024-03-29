@@ -1,6 +1,6 @@
 
 //== START GET ==
-//get all test update
+//get all
 router.get("/", async (req, res) => {
 	const sql = "SELECT * FROM " + tableName;
 

@@ -12,47 +12,44 @@ const workspaceFolders = vscode.workspace.workspaceFolders;
  */
 async function fileExist(path, fileName) {
 	if (!workspaceFolders) return false;
-	console.log("**/" + path + "/" + fileName);
-	let file = await vscode.workspace.findFiles("**/" + path + "/" + fileName);
+
+	const file = await vscode.workspace.findFiles("**/" + path + "/" + fileName);
 	return file.length > 0;
 }
 
 /**
- * Vérifie si un dossier existe.
+ * Vérifie récursivement si un dossier existe dans les sous-dossiers.
  * @param {string} folderName Nom du dossier à rechercher
- * @returns {Promise<Boolean>} true si le fichier existe, false sinon
+ * @param {string} rootPath Chemin du dossier racine à partir duquel commencer la recherche
+ * @returns {Promise<vscode.Uri | null>} L'URI du dossier trouvé ou null si aucun dossier n'a été trouvé
  */
-async function folderExist(folderName) {
-	if (!workspaceFolders) return false;
-
-	const rootPath = workspaceFolders[0].uri.fsPath;
-
-	let dir = await vscode.workspace.fs.readDirectory(vscode.Uri.file(rootPath));
-
-	for (let i = 0; i < dir.length; i++) {
-		const [name, type] = dir[i];
-		if (type === vscode.FileType.Directory) {
-			if (name == folderName) {
-				console.log(dir[i]);
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
-function getFolderPath(folderName) {
-	const workspaceFolders = vscode.workspace.workspaceFolders;
-
+async function folderExist(folderName, rootPath = null) {
 	if (!workspaceFolders) return null;
 
-	for (let folder of workspaceFolders) {
-		let folderPath = folder.uri.fsPath;
-		let files = fs.readdirSync(folderPath);
+	rootPath = rootPath || vscode.workspace.workspaceFolders[0].uri.fsPath;
 
-		if (files.includes(folderName)) {
-			return vscode.Uri.joinPath(folder.uri, folderName).fsPath;
+	const dir = await vscode.workspace.fs.readDirectory(vscode.Uri.file(rootPath));
+
+	for (let i = 0; i < dir.length; i++) {
+		const [fileName, fileType] = dir[i];
+		const fullPath = `${rootPath}/${fileName}`;
+
+		if (fileType !== vscode.FileType.Directory) {
+			continue;
+		}
+
+		if (fileName === "node_modules") {
+			continue;
+		}
+
+		if (fileName === folderName) {
+			return vscode.Uri.file(fullPath);
+		}
+
+		const nestedFolderUri = await folderExist(folderName, fullPath);
+
+		if (nestedFolderUri) {
+			return nestedFolderUri;
 		}
 	}
 
@@ -68,29 +65,28 @@ function getFolderPath(folderName) {
  */
 async function duplicateFolderRecursively(sourcePath, targetPath, excluded_elements = []) {
 	// Create target directory
-	fs.mkdirSync(targetPath);
+	await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetPath));
 
 	// Read source directory
-	const files = fs.readdirSync(sourcePath);
+	const files = await vscode.workspace.fs.readDirectory(vscode.Uri.file(sourcePath));
 
 	// Iterate over files and directories
 	for (const file of files) {
-		const sourceFilePath = path.join(sourcePath, file);
-		const targetFilePath = path.join(targetPath, file);
+		const [fileName, fileType] = file;
+
+		const sourceFilePath = path.join(sourcePath, fileName);
+		const targetFilePath = path.join(targetPath, fileName);
 
 		if (excluded_elements.includes(file)) {
 			continue;
 		}
 
-		// Check if it's a file or directory
-		const isDirectory = fs.lstatSync(sourceFilePath).isDirectory();
-
-		if (isDirectory) {
+		if (fileType === vscode.FileType.Directory) {
 			// Recursively duplicate subdirectory
 			await duplicateFolderRecursively(sourceFilePath, targetFilePath);
 		} else {
 			// Duplicate file
-			fs.copyFileSync(sourceFilePath, targetFilePath);
+			await vscode.workspace.fs.copy(vscode.Uri.file(sourceFilePath), vscode.Uri.file(targetFilePath));
 		}
 	}
 }
@@ -133,4 +129,9 @@ async function readFileContent(fullPath) {
 	}
 }
 
-module.exports = { findFileInWorkspace, readFileContent, folderExist, duplicateFolderRecursively };
+module.exports = {
+	findFileInWorkspace,
+	folderExist,
+	duplicateFolderRecursively,
+	readFileContent,
+};

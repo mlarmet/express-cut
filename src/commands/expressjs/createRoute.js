@@ -1,8 +1,9 @@
 const vscode = require("vscode");
-const { findFileInWorkspace, readFileContent } = require("../utils");
+const { findFileInWorkspace, readFileContent } = require("../../../utils/files");
+const { checkContext, checkWorkspace } = require("../../../utils/workspace");
 
 //======================================
-const ROUTE_TEMPLATE_PATH = "/src/route";
+const ROUTE_TEMPLATE_PATH = "/src/template/route";
 
 const ROUTE_FOLDER_NAME = "routes";
 const ROUTE_LIST_NAME = "routes.js";
@@ -14,19 +15,11 @@ const FOOTER_FILE_NAME = "footer.js";
 const encoder = new TextEncoder();
 
 async function createRoute(context) {
-	if (!context) {
-		vscode.window.showErrorMessage("Le contexte est invalide");
+	if (!checkContext(context)) {
 		return;
 	}
 
-	// The code you place here will be executed every time your command is executed
-	const workspaceFolders = vscode.workspace.workspaceFolders;
-
-	//
-	// Check if a workspace is open
-	//
-	if (!workspaceFolders) {
-		vscode.window.showErrorMessage("Aucun dossier ouvert dans l'espace de travail");
+	if (!checkWorkspace()) {
 		return;
 	}
 
@@ -35,7 +28,7 @@ async function createRoute(context) {
 	// Check if the route.js file exists
 	//
 	if (ROUTE_LIST_URI == null) {
-		vscode.window.showErrorMessage("Le fichier " + ROUTE_LIST_NAME + " n'existe pas");
+		vscode.window.showErrorMessage("Le fichier " + ROUTE_LIST_NAME + " n'existe pas !");
 		return;
 	}
 
@@ -103,9 +96,6 @@ async function createRoute(context) {
 		vscode.window.showErrorMessage("Erreur lors de la lecture du fichier " + HEADER_FILE_NAME);
 		return;
 	}
-
-	// const snippet = new vscode.SnippetString(header_content.toString());
-	// console.log(snippet);
 
 	let header_content_string = header_content.toString();
 

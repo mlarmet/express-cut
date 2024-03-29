@@ -2,22 +2,22 @@
 	"name": "express-cut",
 	"author": "mlarmet",
 	"publisher": "mlarmet",
-	"displayName": "NodeJS Express Shortcuts",
-	"description": "Auto generate CRUD api route",
+	"displayName": "Backend and Frontend Creation Shortcuts",
+	"description": "Auto generate Template for React component or CRUD api route in expressjs",
 	"icon": "road.png",
 	"license": "MIT",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"engines": {
 		"vscode": "^1.75.1"
 	},
 	"files": [
-		"src/backend"
+		"src/template"
 	],
 	"categories": [
 		"Other"
 	],
 	"activationEvents": [],
-	"main": "./extension.js",
+	"main": "./src/extension.js",
 	"contributes": {
 		"commands": [
 			{
@@ -25,12 +25,16 @@
 				"title": "Create new route"
 			},
 			{
-				"command": "backend.setupProject",
+				"command": "express.setupProject",
 				"title": "Create new nodejs backend project"
 			},
 			{
 				"command": "route.addTypeRoute",
 				"title": "Add new type route"
+			},
+			{
+				"command": "react.addComponent",
+				"title": "Create new react component"
 			}
 		],
 		"snippets": [
