@@ -26,10 +26,20 @@ async function setupBackend(context) {
 	//
 	// Check if the backend folder exists
 	//
-	if ((await folderExist(BACKEND_FOLDER_NAME)) != null) {
+	if ((await folderExist(BACKEND_FOLDER_NAME)) != undefined) {
 		vscode.window.showErrorMessage("Le dossier " + BACKEND_FOLDER_NAME + " existe deja a la racine");
 		return;
 	}
+
+	const SOURCE_PATH = context.extensionPath + BACKEND_TEMPLATE_PATH;
+	const TARGET_PATH_URI = vscode.Uri.joinPath(workspaceFolders[0].uri, BACKEND_FOLDER_NAME);
+
+	const EXCLUDED_ELEMENTS = ["node_modules", ".git", ".vscode", "package-lock.json", "package.json"];
+
+	//
+	// Copy the backend folder
+	//
+	await duplicateFolderRecursively(SOURCE_PATH, TARGET_PATH_URI.fsPath, EXCLUDED_ELEMENTS);
 
 	//
 	// Get the name of the project
@@ -45,17 +55,13 @@ async function setupBackend(context) {
 	//
 	// Get the content of the description
 	//
-	let PROJECT_DESCRIPTION = await vscode.window.showInputBox({ prompt: "Description du projet" });
+	let project_description = await vscode.window.showInputBox({ prompt: "Description du projet" });
 
-	const SOURCE_PATH = context.extensionPath + BACKEND_TEMPLATE_PATH;
-	const TARGET_PATH_URI = vscode.Uri.joinPath(workspaceFolders[0].uri, BACKEND_FOLDER_NAME);
+	if (project_description == undefined) {
+		project_description = "";
+	}
 
-	const EXCLUDED_ELEMENTS = ["node_modules", ".git", ".vscode", "package-lock.json", "package.json"];
-
-	//
-	// Copy the backend folder
-	//
-	await duplicateFolderRecursively(SOURCE_PATH, TARGET_PATH_URI.fsPath, EXCLUDED_ELEMENTS);
+	const PROJECT_DESCRIPTION = project_description;
 
 	//
 	// Copy the edited package.json file

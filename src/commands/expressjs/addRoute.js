@@ -40,7 +40,7 @@ async function addRoute(context) {
 	// Get content of type route template file
 	//
 	let type_file_content = await readFileContent(context.extensionPath + ROUTE_TEMPLATE_PATH + "/" + TYPE_ROUTE + ".js");
-	if (type_file_content == null) {
+	if (type_file_content == undefined) {
 		vscode.window.showErrorMessage("Erreur lors de la lecture du fichier " + TYPE_ROUTE);
 		return;
 	}

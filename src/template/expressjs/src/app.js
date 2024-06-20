@@ -20,7 +20,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-for (let route of routes) {
+for (const route of routes) {
 	app.use("/api/" + route.path, require(`./routes/${route.router}`));
 }
 

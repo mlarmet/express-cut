@@ -20,11 +20,11 @@ async function fileExist(path, fileName) {
 /**
  * Vérifie récursivement si un dossier existe dans les sous-dossiers.
  * @param {string} folderName Nom du dossier à rechercher
- * @param {string} rootPath Chemin du dossier racine à partir duquel commencer la recherche
- * @returns {Promise<vscode.Uri | null>} L'URI du dossier trouvé ou null si aucun dossier n'a été trouvé
+ * @param {string} [rootPath] Chemin du dossier racine à partir duquel commencer la recherche
+ * @returns {Promise<vscode.Uri | undefined>} L'URI du dossier trouvé ou undefined si aucun dossier n'a été trouvé
  */
-async function folderExist(folderName, rootPath = null) {
-	if (!workspaceFolders) return null;
+async function folderExist(folderName, rootPath = undefined) {
+	if (!workspaceFolders) return undefined;
 
 	rootPath = rootPath || vscode.workspace.workspaceFolders[0].uri.fsPath;
 
@@ -53,7 +53,7 @@ async function folderExist(folderName, rootPath = null) {
 		}
 	}
 
-	return null;
+	return undefined;
 }
 
 /**
@@ -97,9 +97,9 @@ async function duplicateFolderRecursively(sourcePath, targetPath, excluded_eleme
  * @example findFileInWorkspace("route.js", "routes")
  * @param {string} fileName Nom du fichier à rechercher
  * @param {string=} parentFolder Nom du dossier parent du fichier à rechercher
- * @returns L'URI du fichier trouvé ou null si aucun fichier n'a été trouvé
+ * @returns L'URI du fichier trouvé ou undefined si aucun fichier n'a été trouvé
  */
-async function findFileInWorkspace(fileName, parentFolder = null) {
+async function findFileInWorkspace(fileName, parentFolder = undefined) {
 	const searchPattern = parentFolder ? `**/${parentFolder}/${fileName}` : `**/${fileName}`;
 	const files = await vscode.workspace.findFiles(searchPattern);
 
@@ -109,14 +109,14 @@ async function findFileInWorkspace(fileName, parentFolder = null) {
 	}
 
 	// Fichier non trouvé
-	return null;
+	return undefined;
 }
 
 /**
  * Lis un fichier de l'extension et retourne son contenu.
  * @example readFileContent("route.js")
  * @param {string} fullPath Chemin du fichier à lire + nom du fichier
- * @returns {Promise<Uint8Array>} Chaine de caractères du contenu du fichier, null si le fichier n'existe pas
+ * @returns {Promise<Uint8Array>} Chaine de caractères du contenu du fichier, undefined si le fichier n'existe pas
  */
 async function readFileContent(fullPath) {
 	const FILE_URI = vscode.Uri.file(fullPath);
@@ -125,7 +125,7 @@ async function readFileContent(fullPath) {
 		return await vscode.workspace.fs.readFile(FILE_URI);
 		// const file_content_string = file_content.toString();
 	} catch (error) {
-		return null;
+		return undefined;
 	}
 }
 

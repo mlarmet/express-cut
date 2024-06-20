@@ -1,15 +1,19 @@
 const vscode = require("vscode");
-const { findFileInWorkspace, readFileContent } = require("../../../utils/files");
+const { findFileInWorkspace, folderExist, readFileContent } = require("../../../utils/files");
 const { checkContext, checkWorkspace } = require("../../../utils/workspace");
+
+const { capitalise } = require("../../../utils/strings");
 
 //======================================
 const ROUTE_TEMPLATE_PATH = "/src/template/route";
 
-const ROUTE_FOLDER_NAME = "routes";
 const ROUTE_LIST_NAME = "routes.js";
 
-const HEADER_FILE_NAME = "header.js";
-const FOOTER_FILE_NAME = "footer.js";
+const DATA_FOLDER_NAME = "data";
+const DATA_TEMPLATE_FILE = "data.js";
+
+const ROUTE_FOLDER_NAME = "routes";
+const ROUTE_TEMPLATE_FILE = "route.js";
 //======================================
 
 const encoder = new TextEncoder();
@@ -27,12 +31,10 @@ async function createRoute(context) {
 	//
 	// Check if the route.js file exists
 	//
-	if (ROUTE_LIST_URI == null) {
+	if (ROUTE_LIST_URI == undefined) {
 		vscode.window.showErrorMessage("Le fichier " + ROUTE_LIST_NAME + " n'existe pas !");
 		return;
 	}
-
-	const ROUTE_FOLDER_PATH = ROUTE_LIST_URI.fsPath.replace(ROUTE_LIST_NAME, "");
 
 	//
 	// Get the name of the new route
@@ -43,19 +45,23 @@ async function createRoute(context) {
 		return;
 	}
 
-	const ROUTE_FILE = ROUTE_NAME + ".js";
+	const ROUTE_FILE = ROUTE_NAME + ".route.js";
 	//
 	// Check if the route already exists
 	//
-	if ((await findFileInWorkspace(ROUTE_FILE, ROUTE_FOLDER_NAME)) != null) {
-		vscode.window.showErrorMessage("La route " + ROUTE_FILE + " existe déjà dans " + ROUTE_FOLDER_NAME);
+	if ((await findFileInWorkspace(ROUTE_FILE, ROUTE_FOLDER_NAME)) != undefined) {
+		vscode.window.showErrorMessage("La route `" + ROUTE_NAME + "` existe déjà dans " + ROUTE_FOLDER_NAME + " !");
 		return;
 	}
 
+	const DATA_FILE = ROUTE_NAME + ".js";
 	//
-	// Get URI of new route file
+	// Check if the data already exists
 	//
-	const ROUTE_URI = vscode.Uri.file(ROUTE_FOLDER_PATH + "/" + ROUTE_FILE);
+	if ((await findFileInWorkspace(DATA_FILE, DATA_FOLDER_NAME)) != undefined) {
+		vscode.window.showErrorMessage("Le fichier data `" + DATA_FILE + "` existe déjà dans " + DATA_FOLDER_NAME + " !");
+		return;
+	}
 
 	//
 	// Get content of route.js
@@ -65,7 +71,7 @@ async function createRoute(context) {
 	const containsRoute = new RegExp(`path: "${ROUTE_NAME}"`).test(route_liste_content_string);
 
 	if (containsRoute) {
-		vscode.window.showErrorMessage("La route " + ROUTE_FILE + " existe déjà dans " + ROUTE_LIST_NAME);
+		vscode.window.showErrorMessage("La route `" + ROUTE_FILE + "` existe déjà dans " + ROUTE_LIST_NAME + " !");
 		return;
 	}
 
@@ -78,79 +84,81 @@ async function createRoute(context) {
 		return;
 	}
 
-	const TYPES_ROUTES = await vscode.window.showQuickPick(["GET", "POST", "PUT", "DELETE"], {
-		canPickMany: true,
-		placeHolder: "Sélectionner les types de route",
-	});
+	//============= ADD NEW DATA TO DATA FOLDER =============
 
-	if (TYPES_ROUTES.length == 0) {
-		vscode.window.showErrorMessage("Aucun type de route sélectionné");
+	//
+	// Get content of data template file
+	//
+	let data_content = await readFileContent(context.extensionPath + ROUTE_TEMPLATE_PATH + "/" + DATA_TEMPLATE_FILE);
+	if (data_content == undefined) {
+		vscode.window.showErrorMessage("Erreur lors de la lecture du fichier `" + DATA_TEMPLATE_FILE + "`");
 		return;
 	}
 
+	let data_content_string = data_content.toString();
+
+	data_content_string = data_content_string.replaceAll("%%route_name_cap%%", capitalise(ROUTE_NAME));
+	data_content_string = data_content_string.replaceAll("%%route_name%%", ROUTE_NAME.toLowerCase());
+	data_content_string = data_content_string.replaceAll("%%table_name%%", TABLE_NAME);
+
+	data_content = encoder.encode(data_content_string);
+
 	//
-	// Get content of header template file
+	// Get URI of new data file
 	//
-	let header_content = await readFileContent(context.extensionPath + ROUTE_TEMPLATE_PATH + "/" + HEADER_FILE_NAME);
-	if (header_content == null) {
-		vscode.window.showErrorMessage("Erreur lors de la lecture du fichier " + HEADER_FILE_NAME);
+	const DATA_FOLDER_PATH = await folderExist(DATA_FOLDER_NAME);
+
+	if (DATA_FOLDER_PATH == undefined) {
+		vscode.window.showErrorMessage("Le dossier `" + DATA_FOLDER_NAME + "` n'existe pas !");
 		return;
 	}
 
-	let header_content_string = header_content.toString();
+	const DATA_URI = vscode.Uri.file(DATA_FOLDER_PATH.fsPath + "/" + DATA_FILE);
 
-	header_content_string = header_content_string.replace(/%%route_name%%/g, ROUTE_NAME);
-	header_content_string = header_content_string.replace(/%%table_name%%/g, TABLE_NAME);
+	await vscode.workspace.fs.writeFile(DATA_URI, data_content);
 
-	header_content = encoder.encode(header_content_string);
-
-	//
-	// Write header content to new route file
-	//
-	let total_file_content = header_content;
+	//============= ADD NEW ROUTE TO ROUTE FOLDER =============
 
 	//
-	// Get content of each type route template file
+	// Get content of route template file
 	//
-	for (let type of TYPES_ROUTES) {
-		//get content of route type template file
-		let type_file_content = await readFileContent(context.extensionPath + ROUTE_TEMPLATE_PATH + "/" + type + ".js");
-		if (type_file_content == null) {
-			vscode.window.showErrorMessage("Erreur lors de la lecture du fichier " + type);
-			return;
-		}
-
-		//add content of route type template file to new route file
-		total_file_content = Buffer.concat([total_file_content, type_file_content]);
-	}
-
-	//
-	// Get content of footer template file
-	//
-	let footer_content = await readFileContent(context.extensionPath + ROUTE_TEMPLATE_PATH + "/" + FOOTER_FILE_NAME);
-	if (footer_content == null) {
-		vscode.window.showErrorMessage("Erreur lors de la lecture du fichier " + FOOTER_FILE_NAME);
+	let route_content = await readFileContent(context.extensionPath + ROUTE_TEMPLATE_PATH + "/" + ROUTE_TEMPLATE_FILE);
+	if (route_content == undefined) {
+		vscode.window.showErrorMessage("Erreur lors de la lecture du fichier `" + ROUTE_TEMPLATE_FILE + "`");
 		return;
 	}
 
-	//
-	// Add footer content to new route file
-	//
-	total_file_content = Buffer.concat([total_file_content, footer_content]);
+	let route_content_string = route_content.toString();
 
-	await vscode.workspace.fs.writeFile(ROUTE_URI, total_file_content);
+	route_content_string = route_content_string.replaceAll("%%route_name_cap%%", capitalise(ROUTE_NAME));
+	route_content_string = route_content_string.replaceAll("%%route_name%%", ROUTE_NAME.toLowerCase());
+	route_content_string = route_content_string.replaceAll("%%table_name%%", TABLE_NAME);
+
+	route_content = encoder.encode(route_content_string);
+
+	//
+	// Get URI of new route file
+	//
+	const ROUTE_FOLDER_PATH = await folderExist(ROUTE_FOLDER_NAME);
+
+	if (ROUTE_FOLDER_PATH == undefined) {
+		vscode.window.showErrorMessage("Le dossier `" + ROUTE_FOLDER_NAME + "` n'existe pas !");
+		return;
+	}
+
+	const ROUTE_URI = vscode.Uri.file(ROUTE_FOLDER_PATH.fsPath + "/" + ROUTE_FILE);
+
+	await vscode.workspace.fs.writeFile(ROUTE_URI, route_content);
 
 	//============= ADD ROUTE PATH TO ROUTE LIST FILE =============
 
-	const new_route = `{ path: "${ROUTE_NAME}", router: "${ROUTE_NAME}" }`;
+	const NEW_ROUTE = `{ path: "${ROUTE_NAME}", router: "${ROUTE_NAME}.route" }`;
 
 	//
 	// Find closing bracket and eventual comma with break lines or tabs
 	//
 
 	const listNotEmpty = /}(.*\s*)*];?/.test(route_liste_content_string);
-
-	console.log(listNotEmpty);
 
 	let start = "";
 	let regex = /(\s*)*];?/;
@@ -168,14 +176,14 @@ async function createRoute(context) {
 	//add tab and new route
 	//add break line after new route
 	//re-add closing bracket
-	route_liste_content_string = route_liste_content_string.replace(regex, `${start}\r\n\t${new_route},\r\n];`);
+	route_liste_content_string = route_liste_content_string.replace(regex, `${start}\r\n\t${NEW_ROUTE},\r\n];`);
 
 	//string to Uint8Array
 	const route_liste_content = encoder.encode(route_liste_content_string);
 	//add new content to liste route file
 	await vscode.workspace.fs.writeFile(ROUTE_LIST_URI, route_liste_content);
 
-	vscode.window.showInformationMessage("Route " + ROUTE_FILE + " créé avec succès");
+	vscode.window.showInformationMessage("Route `" + ROUTE_FILE + "` créé avec succès");
 }
 
 module.exports = createRoute;
